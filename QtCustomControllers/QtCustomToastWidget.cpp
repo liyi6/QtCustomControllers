@@ -50,45 +50,6 @@ void QtCustomToastWidget::setFadeTime(int msecs)
     m_hideAni->setDuration(m_fadeTime);
 }
 
-
-void QtCustomToastWidget::updateUi()
-{
-    setWindowFlags(Qt::FramelessWindowHint | Qt::SubWindow | Qt::WindowStaysOnTopHint);
-    setWindowOpacity(0.8);
-    setFont(QFont(QStringLiteral("微软雅黑"), 12));
-
-    m_hideAni = new QPropertyAnimation(this, "windowOpacity");
-    m_hideAni->setDuration(m_fadeTime);
-    m_hideAni->setStartValue(0.8);
-    m_hideAni->setEndValue(0);
-    connect(m_hideAni, SIGNAL(finished()), this, SLOT(hide()));
-
-    connect(&m_timer, SIGNAL(timeout()), this, SLOT(onStartToHide()));
-}
-
-void QtCustomToastWidget::toast(QString &msg, QWidget *wdg)
-{
-    m_toast = msg;
-
-    if (QAbstractAnimation::Stopped != m_hideAni->state()) {
-        m_hideAni->stop();
-    }
-
-    if (m_timer.isActive()) {
-        m_timer.stop();
-    }
-    m_timer.start(m_holdTime);
-
-    setWindowOpacity(0.8);
-
-    if (wdg) {
-
-        show();
-    }
-
-}
-
-
 void QtCustomToastWidget::paintEvent(QPaintEvent *)
 {
     // 计算字体大小以及窗体大小
@@ -99,33 +60,25 @@ void QtCustomToastWidget::paintEvent(QPaintEvent *)
         int margin = 13;
         QFontMetrics fontMetrics(font());
         QSize fontSize = fontMetrics.size(Qt::TextSingleLine, m_toast);
-        setFixedSize(fontSize.width()+2*margin, fontSize.height()+2*margin);
-
-        qDebug() << fontSize.width();
-        qDebug() << fontSize.height();
-
         //绘制中心部分
         QPainter painter(this);
         int padding = 4;
         QPainterPath path;
         path.setFillRule(Qt::WindingFill);
         path.addRoundedRect(padding, padding, width()-padding*2, height()-padding*2, padding, padding);
-        //path.addRect(padding, padding, width()-padding*2, height()-padding*2);
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.fillPath(path, QBrush(m_backColor));
-
         //绘制边界
-        QColor color(209, 209, 209); // 初始化color的R G B通道
-        int edgeAlpha = 250;         // 边界最内圈的Alpha通道值
-        for(int i=0; i<padding; i++)
-        {
+        QColor color(0, 0, 0); // 初始化color的R G B通道
+        int edgeAlpha = 80;         // 边界最内圈的Alpha通道值
+        for (int i=0; i<padding; i++) {
             QPainterPath path;
             path.setFillRule(Qt::WindingFill);
             path.addRoundedRect(padding-i, padding-i, this->width()-(padding-i)*2, this->height()-(padding-i)*2, padding, padding);
             int alpha = edgeAlpha - qSqrt(i)*35;
-            if(alpha < 0){
+            if (alpha < 0) {
                 alpha = 1;
-            }else if(alpha > 256){
+            } else if(alpha > 256) {
                 alpha = 255;
             }
             color.setAlpha(alpha);
@@ -143,10 +96,63 @@ void QtCustomToastWidget::paintEvent(QPaintEvent *)
     }
 }
 
+
+void QtCustomToastWidget::updateUi()
+{
+    setWindowFlags(Qt::FramelessWindowHint | Qt::SubWindow | Qt::WindowStaysOnTopHint);
+    setWindowOpacity(0.8);
+    setFont(QFont(QStringLiteral("微软雅黑"), 12));
+
+    m_hideAni = new QPropertyAnimation(this, "windowOpacity");
+    m_hideAni->setDuration(m_fadeTime);
+    m_hideAni->setStartValue(0.8);
+    m_hideAni->setEndValue(0);
+    connect(m_hideAni, SIGNAL(finished()), this, SLOT(hide()));
+
+    connect(&m_timer, SIGNAL(timeout()), this, SLOT(onStartToHide()));
+}
+
+void QtCustomToastWidget::moveToCenter(QWidget *wdg)
+{
+    if (wdg) {
+        QRect oriRect = geometry();
+        QRect pwdRect = wdg->geometry();
+        oriRect.moveCenter(pwdRect.center());
+        setGeometry(oriRect);
+        move(oriRect.x(), oriRect.y());
+    }
+}
+
+void QtCustomToastWidget::toast(QString &msg, QWidget *wdg)
+{
+    // 停止活动的定时器或正在进行的淡出动画
+    if (QAbstractAnimation::Stopped != m_hideAni->state()) {
+        m_hideAni->stop();
+    }
+    if (m_timer.isActive()) {
+        m_timer.stop();
+    }
+    m_timer.start(m_holdTime);
+    // toast赋值
+    m_toast = msg;
+    // 计算并设置窗体大小
+    QFontMetrics fontMetrics(font());
+    QSize fontSize = fontMetrics.size(Qt::TextSingleLine, m_toast);
+    setFixedSize(fontSize.width()+2*MARGIN, fontSize.height()+2*MARGIN);
+    // 设置窗体透明度
+    setWindowOpacity(0.8);
+    // 设置窗体位置
+    if (wdg) {
+        moveToCenter(wdg);
+    } else {
+        moveToCenter(QApplication::desktop());
+    }
+    // 显示窗体
+    show();
+}
+
 void QtCustomToastWidget::onStartToHide()
 {
     m_timer.stop();
     m_hideAni->start();
 }
-
-

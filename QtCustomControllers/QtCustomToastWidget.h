@@ -7,10 +7,13 @@
 #include <QtMath>
 #include <QPropertyAnimation>
 #include <QAbstractAnimation>
+#include <QDesktopWidget>
+#include <QApplication>
 #include "CustomShadowEffect.h"
 
 #define DEF_HOLD_TIME    1200
-#define DEF_FADE_TIME    500
+#define DEF_FADE_TIME     500
+#define MARGIN             13
 
 class QtCustomToastWidget : public QWidget
 {
@@ -34,6 +37,7 @@ private slots:
 private:
     explicit QtCustomToastWidget(QWidget *parent = 0);
     void updateUi();
+    void moveToCenter(QWidget* wdg = nullptr);
 
 private:
     static QtCustomToastWidget* m_instance;
